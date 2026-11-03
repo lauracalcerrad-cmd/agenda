@@ -1,6 +1,6 @@
 // Guarda la app en el móvil para que funcione sin conexión.
 // Si cambias algún archivo, sube el número de versión para que se actualice.
-const VERSION = "agenda-v3";
+const VERSION = "agenda-v4";
 const FILES = [
   "./",
   "./index.html",
