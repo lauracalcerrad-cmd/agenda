@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Agenda de 2º Edificación</title>
+<meta name="description" content="Exámenes, entregas y tareas del curso, ordenados por plazo y conectados con Google Calendar.">
+<meta name="theme-color" content="#f4ede3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1e1814" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Agenda">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@1,400;1,500;1,600;1,700&family=Fraunces:ital,opsz,wght@1,9..144,500;1,9..144,600&display=swap">
+<style>
+/* Una columna limpia en tonos tierra: cabecera mínima, próximo examen, Lista/Calendario, pestañas de texto y filas con separadores finos */
+:root{
+  --bg:#f4ede3; --fg:#3b2a1e; --muted:#8c7663; --line:#e3d7c7; --soft:#ebe1d3;
+  --accent:#a8692f;
+  --exam:#b4532a; --entrega:#c99331; --tarea:#6e7b45; --ok:#5b3f2c; --gcal:#a99886;
+  --font:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1e1814; --fg:#efe5d8; --muted:#a8977f; --line:#33291f; --soft:#2a221b;
+  --accent:#d39b5c; --exam:#d9734c; --entrega:#d9a64c; --tarea:#9ca867; --ok:#c9a77f; --gcal:#7d6d5c; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-style:italic;font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;font-style:italic;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.wrap{max-width:560px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(120px + env(safe-area-inset-bottom,0px))}
+
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.today{font-size:14px;color:var(--muted)}
+.today::first-letter{text-transform:uppercase}
+h1{font-family:var(--display);font-size:36px;font-weight:600;letter-spacing:-.01em;margin:0;line-height:1.1}
+.icon-btn{background:none;border:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--muted);margin-right:-8px}
+.icon-btn:active{background:var(--soft)}
+
+.next{margin:18px 0 0;font-size:15px;color:var(--muted)}
+.next b{color:var(--fg);font-weight:600}
+.next .d{color:var(--exam);font-weight:600}
+
+.views{display:inline-grid;grid-template-columns:1fr 1fr;background:var(--soft);border-radius:10px;padding:3px;margin-top:20px}
+.views button{border:none;background:none;padding:7px 18px;border-radius:8px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer}
+.views button[aria-pressed="true"]{background:var(--bg);color:var(--fg);box-shadow:0 1px 3px rgba(59,42,30,.12)}
+
+.tabs{display:flex;gap:22px;margin-top:18px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:none;padding:0 0 10px;font-size:15px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-pressed="true"]{color:var(--fg);border-bottom-color:var(--fg)}
+.active-filter{margin-top:12px;font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.link{background:none;border:none;padding:0;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer}
+
+.group{margin-top:26px}
+.group h2{font-family:var(--display);font-size:17px;font-weight:500;color:var(--muted);margin:0 0 2px}
+.group.late h2{color:var(--exam)}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.item:last-child{border-bottom:none}
+.check{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--muted);background:transparent;display:grid;place-items:center;cursor:pointer;padding:0;color:transparent;opacity:.7}
+.check[aria-checked="true"]{background:var(--ok);border-color:var(--ok);color:var(--bg);opacity:1}
+.body{min-width:0}
+.title{font-weight:500;overflow-wrap:anywhere}
+.item.done .title{text-decoration:line-through;color:var(--muted)}
+.sub{font-size:13.5px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px;min-width:0}
+.sub .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--t);flex:none}
+.item[data-type="examen"],.cell .examen{--t:var(--exam)} .item[data-type="entrega"],.cell .entrega{--t:var(--entrega)} .item[data-type="tarea"],.cell .tarea{--t:var(--tarea)} .item[data-type="google"],.cell .google{--t:var(--gcal)}
+.when{font-size:13.5px;color:var(--muted);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.when.urgent{color:var(--exam);font-weight:600}
+.gmark{width:24px;height:24px;display:grid;place-items:center;color:var(--gcal)}
+.synced{color:var(--muted);opacity:.7;flex:none}
+
+/* calendario */
+.cal{margin-top:22px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-head h2{font-family:var(--display);font-size:22px;font-weight:500;margin:0}
+.cal-head h2::first-letter{text-transform:uppercase}
+.cal-nav{display:flex;gap:2px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px}
+.wd{font-size:12px;color:var(--muted);text-align:center;padding:4px 0 8px}
+.cell{background:none;border:none;padding:6px 0 8px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;border-radius:10px;min-width:0}
+.cell .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-variant-numeric:tabular-nums}
+.cell.out .n{color:var(--muted);opacity:.45}
+.cell.today .n{background:var(--fg);color:var(--bg);font-weight:600}
+.cell.sel:not(.today) .n{box-shadow:inset 0 0 0 1.5px var(--fg)}
+.cell .dots{display:flex;gap:3px;height:6px}
+.cell .dots i{width:5px;height:5px;border-radius:50%;background:var(--t)}
+.day{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+.day h3{font-family:var(--display);font-size:18px;font-weight:500;margin:0 0 4px}
+.day h3::first-letter{text-transform:uppercase}
+.day .none{color:var(--muted);font-size:14px;padding:8px 0}
+.gline{margin-top:14px;font-size:13.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+.empty{margin-top:60px;text-align:center;color:var(--muted);font-size:15px}
+.empty b{display:block;color:var(--fg);font-size:17px;margin-bottom:4px}
+.examples{margin-top:28px;font-size:13px;color:var(--muted);text-align:center}
+
+.fab{position:fixed;right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;background:var(--fg);color:var(--bg);border:none;display:grid;place-items:center;box-shadow:0 6px 20px rgba(59,42,30,.25);cursor:pointer;z-index:5}
+
+.sheet-bg{position:fixed;inset:0;background:rgba(40,28,20,.4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:22px max(20px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px;max-height:92vh;overflow:auto}
+.sheet h3{font-family:var(--display);font-size:24px;font-weight:600;margin:0}
+.sheet h4{font-family:var(--display);font-size:16px;font-weight:500;color:var(--muted);margin:10px 0 0}
+.sheet p{margin:0;font-size:14px;color:var(--muted)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--soft);border-radius:10px;padding:3px}
+.seg button{border:none;background:none;padding:8px 4px;border-radius:8px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.seg button[aria-pressed="true"]{background:var(--bg);color:var(--fg);box-shadow:0 1px 3px rgba(59,42,30,.12)}
+.seg .dot{background:var(--c)}
+input.in,textarea.in,select.in{font-size:16px;color:var(--fg);background:var(--soft);border:none;border-radius:10px;padding:12px;width:100%;min-width:0}
+textarea.in{resize:vertical}
+input.big{font-size:19px;font-weight:500;background:none;padding:4px 0;border-radius:0;border-bottom:1px solid var(--line)}
+input.big:focus-visible{outline:none;border-bottom:2px solid var(--accent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lbl{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px;min-width:0}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.btn{border:none;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;background:var(--soft);color:var(--fg)}
+.btn.primary{background:var(--fg);color:var(--bg)}
+.btn.block{width:100%;text-align:left}
+.btn.text{background:none;padding:12px 4px;color:var(--muted)}
+.btn.danger{background:none;color:var(--exam);padding:12px 4px}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.6}
+.grow{flex:1}
+.err{color:var(--exam);font-size:14px;margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.switch{display:flex;justify-content:space-between;align-items:center;font-size:15px;padding:4px 0}
+.switch input{width:20px;height:20px;accent-color:var(--fg)}
+.status{display:flex;align-items:center;gap:8px;font-size:15px}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.status.on i{background:var(--tarea)}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:30;max-width:calc(100% - 40px)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .2s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.7}}}
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <header>
+    <div>
+      <div class="today" id="today"></div>
+      <h1>Agenda</h1>
+    </div>
+    <button class="icon-btn" id="menuBtn" aria-label="Más opciones">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button>
+  </header>
+
+  <p class="next" id="next" aria-live="polite"></p>
+
+  <div class="views" role="group" aria-label="Vista">
+    <button data-v="list" aria-pressed="true">Lista</button>
+    <button data-v="cal" aria-pressed="false">Calendario</button>
+  </div>
+
+  <nav class="tabs" aria-label="Filtrar">
+    <button class="tab" data-f="all" aria-pressed="true">Todo</button>
+    <button class="tab" data-f="examen" aria-pressed="false">Exámenes</button>
+    <button class="tab" data-f="entrega" aria-pressed="false">Entregas</button>
+    <button class="tab" data-f="tarea" aria-pressed="false">Tareas</button>
+  </nav>
+  <div class="active-filter" id="subjActive" hidden><span id="subjName"></span><button class="link" id="subjClear">Quitar filtro</button></div>
+
+  <div id="listView"><div id="groups"></div></div>
+
+  <section class="cal" id="calView" hidden>
+    <div class="cal-head">
+      <h2 id="calTitle"></h2>
+      <div class="cal-nav">
+        <button class="icon-btn" id="prevM" aria-label="Mes anterior"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button class="icon-btn" id="nextM" aria-label="Mes siguiente"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="gline" id="gLine"></div>
+    <div class="day" id="day"></div>
+  </section>
+
+  <p class="examples" id="exBanner" hidden>Estos son ejemplos. <button class="link" id="clearEx">Quitarlos</button></p>
+</main>
+
+<button class="fab" id="add" aria-label="Añadir">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- Formulario -->
+<div class="sheet-bg" id="formBg" hidden>
+  <form class="sheet" id="form" novalidate>
+    <div class="seg" id="typeSeg">
+      <button type="button" data-v="examen" style="--c:var(--exam)"><span class="dot"></span>Examen</button>
+      <button type="button" data-v="entrega" style="--c:var(--entrega)"><span class="dot"></span>Entrega</button>
+      <button type="button" data-v="tarea" style="--c:var(--tarea)"><span class="dot"></span>Tarea</button>
+    </div>
+    <input class="in big" id="fTitle" placeholder="¿Qué tienes que hacer?" autocomplete="off" aria-label="Qué es">
+    <label class="lbl">Asignatura<input class="in" id="fSubj" list="subjList" placeholder="Ej.: Instalaciones" autocomplete="off"></label>
+    <datalist id="subjList"></datalist>
+    <div class="row">
+      <label class="lbl">Fecha<input class="in" id="fDate" type="date"></label>
+      <label class="lbl">Hora<input class="in" id="fTime" type="time"></label>
+    </div>
+    <label class="lbl">Notas<textarea class="in" id="fNotes" rows="2" placeholder="Opcional"></textarea></label>
+    <p id="fErr" class="err" hidden></p>
+    <div class="actions">
+      <button type="button" class="btn danger" id="del" hidden>Borrar</button>
+      <button type="button" class="btn text" id="toCal" hidden>Abrir en Google Calendar</button>
+      <span class="grow"></span>
+      <button type="button" class="btn text" id="cancel">Cancelar</button>
+      <button type="submit" class="btn primary">Guardar</button>
+    </div>
+    <p class="err" id="delConfirm" hidden>¿Borrar para siempre?
+      <button type="button" class="btn danger" id="delYes">Sí, borrar</button>
+      <button type="button" class="btn text" id="delNo">No</button>
+    </p>
+  </form>
+</div>
+
+<!-- Menú -->
+<div class="sheet-bg" id="menuBg" hidden>
+  <div class="sheet">
+    <h3>Opciones</h3>
+
+    <h4>Google Calendar</h4>
+    <div class="status" id="gStatus"><i></i><span></span></div>
+    <p id="gHelp"></p>
+    <button class="btn block primary" id="gConnectBtn">Conectar con Google</button>
+    <button class="btn block" id="gSyncBtn">Sincronizar ahora</button>
+    <div id="gTypes">
+      <label class="switch">Enviar exámenes<input type="checkbox" data-gt="examen"></label>
+      <label class="switch">Enviar entregas<input type="checkbox" data-gt="entrega"></label>
+      <label class="switch">Enviar tareas<input type="checkbox" data-gt="tarea"></label>
+    </div>
+    <button class="btn block text" id="gOffBtn">Desconectar Google</button>
+
+    <h4>Ver</h4>
+    <label class="lbl">Asignatura<select class="in" id="subj"><option value="">Todas</option></select></label>
+    <label class="switch">Mostrar las hechas<input type="checkbox" id="showDone"></label>
+
+    <h4>Avisos</h4>
+    <p>Te aviso de lo que vence hoy y mañana al abrir la app. Los avisos que llegan sin abrirla son los de Google Calendar.</p>
+    <button class="btn block" id="notifBtn">Activar avisos</button>
+    <button class="btn block" id="allCal">Descargar exámenes y entregas (.ics)</button>
+
+    <h4>Copia de seguridad</h4>
+    <p>Los datos de la app solo están en este móvil. Guarda una copia en Drive de vez en cuando.</p>
+    <button class="btn block" id="exportBtn">Descargar copia</button>
+    <button class="btn block" id="importBtn">Restaurar desde copia</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <p class="err" id="importConfirm" hidden></p>
+
+    <button class="btn primary" id="menuClose">Hecho</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// ============================================================
+//  CONFIGURACIÓN DE GOOGLE CALENDAR
+//  Pega entre las comillas tu "ID de cliente" de Google Cloud
+//  (paso 4 del LEEME). Sin él, la app funciona igual pero sin
+//  conexión con Google.
+// ============================================================
+const GOOGLE_CLIENT_ID = "";
+
+(function(){
+const $=s=>document.querySelector(s);
+const KEY="agenda-items-v1";
+const TYPES={examen:"Examen",entrega:"Entrega",tarea:"Tarea"};
+const SUGGEST=["Diseño y construcción de edificios","Instalaciones en edificación","Eficiencia energética","Levantamientos topográficos","Proyectos de edificación residencial","Proyectos de edificación no residencial","Proyectos urbanísticos y de obra civil","Proyecto intermodular","BIM"];
+const TZ=(Intl.DateTimeFormat().resolvedOptions().timeZone)||"Europe/Madrid";
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}}
+
+// ---------- utilidades de fecha ----------
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function pad(n){return String(n).padStart(2,"0")}
+function ymd(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function parse(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function addDays(s,n){const d=parse(s);d.setDate(d.getDate()+n);return ymd(d)}
+function todayStr(){return ymd(new Date())}
+function daysTo(s){const t=new Date();return Math.round((parse(s)-new Date(t.getFullYear(),t.getMonth(),t.getDate()))/86400000)}
+const fmt=new Intl.DateTimeFormat("es-ES",{weekday:"short",day:"numeric",month:"short"});
+function fmtDate(s){return fmt.format(parse(s)).replace(/\./g,"")}
+function when(s){const n=daysTo(s);if(n===0)return"Hoy";if(n===1)return"Mañana";if(n===-1)return"Ayer";if(n>1&&n<7)return"en "+n+" días";return fmtDate(s)}
+$("#today").textContent=new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(new Date());
+
+// ---------- almacenamiento ----------
+function load(){try{const r=JSON.parse(ls(KEY)||"null");return Array.isArray(r)?r:null}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(items));return true}catch(e){toast("No se pudo guardar en este móvil.");return false}}
+let items=load();
+if(items===null){
+  items=[
+    {id:uid(),type:"examen",title:"Examen de materiales: hormigones y morteros",subject:"Diseño y construcción de edificios",due:addDays(todayStr(),9),time:"09:00",notes:"",done:false,example:true},
+    {id:uid(),type:"entrega",title:"Planos de saneamiento en Revit",subject:"Instalaciones en edificación",due:addDays(todayStr(),3),time:"",notes:"",done:false,example:true},
+    {id:uid(),type:"tarea",title:"Preparar preguntas de la encuesta vecinal",subject:"Proyecto intermodular",due:addDays(todayStr(),1),time:"",notes:"",done:false,example:true}
+  ];save();
+}
+
+let filter=ls("filter")||"all",subj="",showDone=ls("showDone")==="1",view=ls("view")||"list",editing=null,formType="examen";
+let calMonth=(()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),1)})(),selDay=todayStr();
+$("#showDone").checked=showDone;
+
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2800)}
+
+// ---------- filas ----------
+const CHECK_SVG='<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7.5l3.2 3L12 3.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const SYNC_SVG='<svg class="synced" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+function itemRow(i,showWhen){
+  const n=daysTo(i.due);const el=document.createElement("div");el.className="item"+(i.done?" done":"");el.dataset.type=i.type;el.tabIndex=0;
+  el.innerHTML='<button class="check" role="checkbox" aria-label="Marcar como hecha" aria-checked="'+(!!i.done)+'">'+CHECK_SVG+'</button><div class="body"><div class="title"></div><div class="sub"><span class="dot"></span><span class="txt"></span>'+(i.gid?SYNC_SVG:"")+'</div></div><div class="when'+(!i.done&&n<=1?" urgent":"")+'"></div>';
+  el.querySelector(".title").textContent=i.title;
+  el.querySelector(".txt").textContent=[TYPES[i.type],i.subject,i.time].filter(Boolean).join(" · ");
+  el.querySelector(".when").textContent=showWhen?when(i.due):(i.time||"");
+  el.querySelector(".check").addEventListener("click",ev=>{ev.stopPropagation();i.done=!i.done;save();render()});
+  el.addEventListener("click",()=>openForm(i));
+  el.addEventListener("keydown",ev=>{if(ev.key==="Enter")openForm(i)});
+  return el;
+}
+function gRow(e){
+  const el=document.createElement("div");el.className="item";el.dataset.type="google";
+  el.innerHTML='<span class="gmark" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><div class="body"><div class="title"></div><div class="sub"><span class="dot"></span><span class="txt">Google Calendar</span></div></div><div class="when"></div>';
+  el.querySelector(".title").textContent=e.summary||"(Sin título)";
+  el.querySelector(".when").textContent=e.time||"Todo el día";
+  if(e.link){el.addEventListener("click",()=>{window.open(e.link,"_blank","noopener")})}
+  return el;
+}
+function visible(i){return (filter==="all"||i.type===filter)&&(!subj||i.subject===subj)}
+
+// ---------- pintar ----------
+function render(){
+  const pending=items.filter(i=>!i.done);
+  const exams=pending.filter(i=>i.type==="examen"&&daysTo(i.due)>=0).sort((a,b)=>a.due.localeCompare(b.due));
+  const nx=$("#next");nx.textContent="";
+  if(exams[0]){const n=daysTo(exams[0].due);
+    nx.append("Próximo examen ");const d=document.createElement("span");d.className="d";d.textContent=n===0?"hoy":n===1?"mañana":"en "+n+" días";nx.append(d,": ");
+    const b=document.createElement("b");b.textContent=exams[0].title;nx.append(b);}
+  else{const late=pending.filter(i=>daysTo(i.due)<0).length;nx.textContent=pending.length?"Ningún examen a la vista."+(late?" Tienes "+late+" vencida"+(late>1?"s":"")+".":""):"Todo al día."}
+  $("#exBanner").hidden=!items.some(i=>i.example);
+
+  const subs=[...new Set(items.map(i=>i.subject).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es"));
+  const sel=$("#subj");sel.innerHTML='<option value="">Todas</option>';
+  subs.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;sel.append(o)});
+  if(!subs.includes(subj))subj="";sel.value=subj;
+  $("#subjActive").hidden=!subj;$("#subjName").textContent=subj;
+  const dl=$("#subjList");dl.innerHTML="";[...new Set([...subs,...SUGGEST])].forEach(s=>{const o=document.createElement("option");o.value=s;dl.append(o)});
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===filter)));
+  document.querySelectorAll(".views button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===view)));
+  $("#listView").hidden=view!=="list";$("#calView").hidden=view!=="cal";
+  if(view==="list")renderList();else renderCal();
+}
+function renderList(){
+  let list=items.filter(i=>visible(i)&&(showDone||!i.done));
+  list.sort((a,b)=>a.due.localeCompare(b.due)||(a.time||"").localeCompare(b.time||""));
+  const groups=[["late","Vencidas",i=>!i.done&&daysTo(i.due)<0],["week","Esta semana",i=>{const n=daysTo(i.due);return n>=0&&n<=7}],["later","Más adelante",i=>daysTo(i.due)>7],["past","Hechas",i=>i.done&&daysTo(i.due)<0]];
+  const g=$("#groups");g.innerHTML="";
+  if(!list.length){g.innerHTML='<div class="empty"><b>Nada pendiente</b>Pulsa + para apuntar un examen, una entrega o una tarea.</div>';return}
+  groups.forEach(([k,name,fn])=>{const rows=list.filter(fn);if(!rows.length)return;
+    const sec=document.createElement("section");sec.className="group "+k;
+    const h=document.createElement("h2");h.textContent=name;sec.append(h);
+    const L=document.createElement("div");L.className="list";sec.append(L);
+    rows.forEach(i=>L.append(itemRow(i,true)));g.append(sec)});
+}
+function renderCal(){
+  const y=calMonth.getFullYear(),m=calMonth.getMonth();
+  $("#calTitle").textContent=new Intl.DateTimeFormat("es-ES",{month:"long",year:"numeric"}).format(calMonth);
+  const grid=$("#grid");grid.innerHTML="";
+  ["L","M","X","J","V","S","D"].forEach(w=>{const d=document.createElement("div");d.className="wd";d.textContent=w;grid.append(d)});
+  const first=new Date(y,m,1);const lead=(first.getDay()+6)%7;const start=new Date(y,m,1-lead);
+  const weeks=Math.ceil((lead+new Date(y,m+1,0).getDate())/7);
+  const byDay={};items.filter(i=>visible(i)&&(showDone||!i.done)).forEach(i=>{(byDay[i.due]=byDay[i.due]||[]).push(i.type)});
+  const today=todayStr();
+  for(let k=0;k<weeks*7;k++){const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+k);const s=ymd(d);
+    const b=document.createElement("button");b.className="cell"+(d.getMonth()!==m?" out":"")+(s===today?" today":"")+(s===selDay?" sel":"");
+    b.setAttribute("aria-label",new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(d));
+    const n=document.createElement("span");n.className="n";n.textContent=d.getDate();b.append(n);
+    const dots=document.createElement("span");dots.className="dots";
+    const types=[...new Set(byDay[s]||[])];if((gEvents[s]||[]).length)types.push("google");
+    types.slice(0,4).forEach(t=>{const i=document.createElement("i");i.className=t;dots.append(i)});
+    b.append(dots);b.addEventListener("click",()=>{selDay=s;renderCal()});grid.append(b);}
+  // estado de Google
+  const gl=$("#gLine");gl.innerHTML="";
+  if(!GOOGLE_CLIENT_ID){gl.textContent="Google Calendar aún no está configurado (paso 4 del LEEME)."}
+  else if(!gReady()){gl.append(ls("gLinked")?"Google Calendar desconectado.":"Conecta Google Calendar para ver aquí tus eventos.");const bt=document.createElement("button");bt.className="btn small";bt.textContent=ls("gLinked")?"Reconectar":"Conectar";bt.onclick=()=>gConnect().then(ok=>{if(ok){gLoadMonth(true);gSyncAll()}});gl.append(bt)}
+  else{gl.textContent=gLoading?"Cargando eventos de Google…":"Mostrando también tus eventos de Google Calendar."}
+  // panel del día
+  const day=$("#day");day.innerHTML="";
+  const h=document.createElement("h3");h.textContent=new Intl.DateTimeFormat("es-ES",{weekday:"long",day:"numeric",month:"long"}).format(parse(selDay));day.append(h);
+  const L=document.createElement("div");L.className="list";
+  const mine=items.filter(i=>i.due===selDay&&visible(i)&&(showDone||!i.done)).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+  mine.forEach(i=>L.append(itemRow(i,false)));
+  (gEvents[selDay]||[]).forEach(e=>L.append(gRow(e)));
+  if(!L.children.length){const p=document.createElement("div");p.className="none";p.textContent="Nada este día.";day.append(p)}else day.append(L);
+  if(gReady())gLoadMonth(false);
+}
+
+// ---------- vistas y filtros ----------
+document.querySelectorAll(".views button").forEach(b=>b.addEventListener("click",()=>{view=b.dataset.v;ls("view",view);render()}));
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{filter=b.dataset.f;ls("filter",filter);render()}));
+$("#subj").addEventListener("change",e=>{subj=e.target.value;render()});
+$("#subjClear").addEventListener("click",()=>{subj="";render()});
+$("#showDone").addEventListener("change",e=>{showDone=e.target.checked;ls("showDone",showDone?"1":"0");render()});
+$("#clearEx").addEventListener("click",()=>{items=items.filter(i=>!i.example);save();render()});
+$("#prevM").addEventListener("click",()=>{calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()-1,1);render()});
+$("#nextM").addEventListener("click",()=>{calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+1,1);render()});
+
+// ---------- formulario ----------
+function setType(t){formType=t;document.querySelectorAll("#typeSeg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===t)))}
+document.querySelectorAll("#typeSeg button").forEach(b=>b.addEventListener("click",()=>setType(b.dataset.v)));
+function openForm(i){
+  editing=i||null;
+  setType(i?i.type:(filter!=="all"?filter:"examen"));
+  $("#fTitle").value=i?i.title:"";$("#fSubj").value=i?(i.subject||""):(subj||"");
+  $("#fDate").value=i?i.due:(view==="cal"?selDay:todayStr());$("#fTime").value=i?(i.time||""):"";$("#fNotes").value=i?(i.notes||""):"";
+  $("#del").hidden=!i;$("#toCal").hidden=!i;$("#delConfirm").hidden=true;$("#fErr").hidden=true;
+  $("#toCal").textContent=i&&i.gid?"Ver en Google Calendar":"Abrir en Google Calendar";
+  $("#formBg").hidden=false;if(!i)setTimeout(()=>$("#fTitle").focus(),60);
+}
+function closeForm(){$("#formBg").hidden=true;editing=null}
+$("#add").addEventListener("click",()=>openForm(null));
+$("#cancel").addEventListener("click",closeForm);
+$("#formBg").addEventListener("click",e=>{if(e.target.id==="formBg")closeForm()});
+$("#form").addEventListener("submit",e=>{e.preventDefault();
+  const title=$("#fTitle").value.trim(),due=$("#fDate").value;
+  if(!title||!due){$("#fErr").textContent="Escribe qué es y elige la fecha.";$("#fErr").hidden=false;return}
+  const data={type:formType,title,subject:$("#fSubj").value.trim(),due,time:$("#fTime").value,notes:$("#fNotes").value.trim(),gdirty:true};
+  let it;if(editing){it=editing;Object.assign(it,data);delete it.example}else{it={id:uid(),done:false,...data};items.push(it)}
+  if(save()){closeForm();render();toast("Guardado");gSyncItem(it)}
+});
+$("#del").addEventListener("click",()=>{$("#delConfirm").hidden=false});
+$("#delNo").addEventListener("click",()=>{$("#delConfirm").hidden=true});
+$("#delYes").addEventListener("click",()=>{if(!editing)return;const it=editing;items=items.filter(x=>x!==it);save();closeForm();render();toast("Borrado");gDeleteItem(it)});
+$("#toCal").addEventListener("click",()=>{if(!editing)return;
+  if(editing.gid&&editing.glink){window.open(editing.glink,"_blank","noopener");return}
+  window.open(templateUrl(editing),"_blank","noopener")});
+function templateUrl(i){
+  const dates=i.time?(i.due.replace(/-/g,"")+"T"+i.time.replace(":","")+"00/"+endOf(i).replace(/[-:]/g,"")):(i.due.replace(/-/g,"")+"/"+addDays(i.due,1).replace(/-/g,""));
+  const p=new URLSearchParams({action:"TEMPLATE",text:TYPES[i.type]+": "+i.title,dates,details:[i.subject,i.notes].filter(Boolean).join("\n"),ctz:TZ});
+  return "https://calendar.google.com/calendar/render?"+p.toString();
+}
+function endOf(i){const [h,m]=i.time.split(":").map(Number);return h>=23?i.due+"T23:59:00":i.due+"T"+pad(h+1)+":"+pad(m)+":00"}
+
+// ============================================================
+//  GOOGLE CALENDAR
+// ============================================================
+const SCOPE="https://www.googleapis.com/auth/calendar.events";
+const API="https://www.googleapis.com/calendar/v3/calendars/primary/events";
+let gToken=null,gExp=0,tokenClient=null,gWaiter=null,gEvents={},gLoaded={},gLoading=false;
+let gTypes={examen:true,entrega:true,tarea:false};
+try{const t=JSON.parse(ls("gTypes")||"null");if(t)gTypes=t}catch(e){}
+try{const t=JSON.parse(ls("gTok")||"null");if(t&&t.exp>Date.now()){gToken=t.token;gExp=t.exp}}catch(e){}
+function gReady(){return !!gToken&&Date.now()<gExp-60000}
+
+function initGis(){
+  if(!GOOGLE_CLIENT_ID)return;
+  const s=document.createElement("script");s.src="https://accounts.google.com/gsi/client";s.async=true;
+  s.onload=()=>{try{tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:SCOPE,
+    callback:r=>{if(r&&r.access_token){gToken=r.access_token;gExp=Date.now()+(Number(r.expires_in)||3600)*1000;ls("gTok",JSON.stringify({token:gToken,exp:gExp}));ls("gLinked","1");done(true)}else done(false)},
+    error_callback:()=>done(false)})}catch(e){}};
+  document.head.append(s);
+  function done(ok){if(gWaiter){gWaiter(ok);gWaiter=null}updMenu();render()}
+}
+// Debe llamarse desde un toque del usuario (Google abre una ventana).
+function gConnect(){
+  if(!GOOGLE_CLIENT_ID){toast("Primero pon tu ID de cliente de Google (paso 4 del LEEME).");return Promise.resolve(false)}
+  if(!tokenClient){toast("Google aún está cargando. Inténtalo en un momento.");return Promise.resolve(false)}
+  return new Promise(res=>{gWaiter=res;tokenClient.requestAccessToken({prompt:ls("gLinked")?"":"consent"})});
+}
+function gDisconnect(){
+  try{if(gToken&&window.google)google.accounts.oauth2.revoke(gToken,()=>{})}catch(e){}
+  gToken=null;gExp=0;ls("gTok",null);ls("gLinked",null);gEvents={};gLoaded={};render();updMenu();toast("Google desconectado");
+}
+async function gApi(url,opt){
+  const r=await fetch(url,Object.assign({},opt,{headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"}}));
+  if(r.status===401){gToken=null;ls("gTok",null);throw {code:401}}
+  if(r.status===404||r.status===410)return {gone:true};
+  if(!r.ok)throw {code:r.status};
+  return r.status===204?{}:r.json();
+}
+function gBody(i){
+  const b={summary:TYPES[i.type]+": "+i.title,description:[i.subject,i.notes].filter(Boolean).join("\n"),
+    colorId:{examen:"11",entrega:"5",tarea:"2"}[i.type],
+    extendedProperties:{private:{agendaId:i.id}}};
+  if(i.time){b.start={dateTime:i.due+"T"+i.time+":00",timeZone:TZ};b.end={dateTime:endOf(i),timeZone:TZ};
+    b.reminders={useDefault:false,overrides:(i.type==="examen"?[4320,1440]:[1440]).map(m=>({method:"popup",minutes:m}))};}
+  else{b.start={date:i.due};b.end={date:addDays(i.due,1)};
+    // eventos de día completo: 9:00 del día anterior (y 3 días antes si es examen)
+    b.reminders={useDefault:false,overrides:(i.type==="examen"?[3780,900]:[900]).map(m=>({method:"popup",minutes:m}))};}
+  return b;
+}
+async function gSyncItem(i){
+  if(!gReady()||i.example||!gTypes[i.type]||(i.done&&!i.gid))return false;
+  try{
+    let r=null;
+    if(i.gid){r=await gApi(API+"/"+encodeURIComponent(i.gid),{method:"PATCH",body:JSON.stringify(gBody(i))});if(r.gone){i.gid=null;r=null}}
+    if(!i.gid){r=await gApi(API,{method:"POST",body:JSON.stringify(gBody(i))});i.gid=r.id}
+    if(r&&r.htmlLink)i.glink=r.htmlLink;
+    i.gdirty=false;save();gLoaded={};if(view==="cal")render();return true;
+  }catch(e){if(e&&e.code===401){render();toast("La sesión de Google ha caducado. Pulsa Reconectar.")}return false}
+}
+async function gDeleteItem(i){if(!i.gid||!gReady())return;try{await gApi(API+"/"+encodeURIComponent(i.gid),{method:"DELETE"});gLoaded={};if(view==="cal")render()}catch(e){}}
+async function gSyncAll(){
+  if(!gReady())return;
+  const todo=items.filter(i=>!i.example&&gTypes[i.type]&&(!i.gid||i.gdirty)&&!i.done&&daysTo(i.due)>=-1);
+  let ok=0;for(const i of todo){if(await gSyncItem(i))ok++}
+  if(todo.length)toast(ok===todo.length?"Enviado a Google Calendar: "+ok:"Enviados "+ok+" de "+todo.length+". Revisa la conexión.");
+  else toast("Todo está al día en Google Calendar");
+}
+async function gLoadMonth(force){
+  if(!gReady()||gLoading)return;
+  const key=calMonth.getFullYear()+"-"+calMonth.getMonth();if(gLoaded[key]&&!force)return;
+  gLoading=true;
+  const from=new Date(calMonth.getFullYear(),calMonth.getMonth()-1,20),to=new Date(calMonth.getFullYear(),calMonth.getMonth()+1,12);
+  try{
+    const r=await gApi(API+"?"+new URLSearchParams({timeMin:from.toISOString(),timeMax:to.toISOString(),singleEvents:"true",orderBy:"startTime",maxResults:"250"}),{method:"GET"});
+    const out={};
+    (r.items||[]).forEach(e=>{
+      if(e.status==="cancelled"||(e.extendedProperties&&e.extendedProperties.private&&e.extendedProperties.private.agendaId))return;
+      if(e.start&&e.start.date){let d=e.start.date;const end=e.end&&e.end.date||addDays(d,1);let c=0;while(d<end&&c<31){(out[d]=out[d]||[]).push({summary:e.summary,link:e.htmlLink});d=addDays(d,1);c++}}
+      else if(e.start&&e.start.dateTime){const dt=new Date(e.start.dateTime);const d=ymd(dt);(out[d]=out[d]||[]).push({summary:e.summary,time:pad(dt.getHours())+":"+pad(dt.getMinutes()),link:e.htmlLink})}
+    });
+    gEvents=out;gLoaded={[key]:true};
+  }catch(e){if(e&&e.code===401)toast("La sesión de Google ha caducado. Pulsa Reconectar.")}
+  gLoading=false;if(view==="cal")renderCal();
+}
+
+// ---------- menú: Google ----------
+function updMenu(){
+  const st=$("#gStatus"),help=$("#gHelp");const linked=!!ls("gLinked");
+  st.classList.toggle("on",gReady());
+  st.querySelector("span").textContent=!GOOGLE_CLIENT_ID?"Sin configurar":gReady()?"Conectado":linked?"Sesión caducada":"Sin conectar";
+  help.textContent=!GOOGLE_CLIENT_ID?"Para conectarla, sigue el paso 4 del LEEME y pega tu ID de cliente en index.html."
+    :gReady()?"Lo que marques abajo se envía a tu calendario principal con recordatorios: 3 días y 1 día antes en exámenes, 1 día antes en lo demás."
+    :"Google pide volver a entrar cada hora por seguridad. Es un toque y no tienes que poner la contraseña.";
+  $("#gConnectBtn").hidden=!GOOGLE_CLIENT_ID||gReady();$("#gConnectBtn").textContent=linked?"Reconectar con Google":"Conectar con Google";
+  $("#gSyncBtn").hidden=!gReady();$("#gOffBtn").hidden=!linked;$("#gTypes").hidden=!GOOGLE_CLIENT_ID;
+  document.querySelectorAll("[data-gt]").forEach(c=>c.checked=!!gTypes[c.dataset.gt]);
+}
+$("#gConnectBtn").addEventListener("click",async()=>{if(await gConnect()){toast("Conectado con Google");gLoaded={};gSyncAll()}});
+$("#gSyncBtn").addEventListener("click",()=>gSyncAll());
+$("#gOffBtn").addEventListener("click",gDisconnect);
+document.querySelectorAll("[data-gt]").forEach(c=>c.addEventListener("change",()=>{gTypes[c.dataset.gt]=c.checked;ls("gTypes",JSON.stringify(gTypes))}));
+
+// ---------- archivo .ics (alternativa sin Google) ----------
+function icsEsc(s){return String(s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n")}
+function buildICS(list){
+  const now=new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Agenda 2 Edificacion//ES","CALSCALE:GREGORIAN","METHOD:PUBLISH"];
+  list.forEach(i=>{
+    const d=i.due.replace(/-/g,"");let alarms;
+    L.push("BEGIN:VEVENT","UID:"+i.id+"@agenda-edificacion","DTSTAMP:"+now);
+    if(i.time){L.push("DTSTART:"+d+"T"+i.time.replace(":","")+"00","DTEND:"+endOf(i).replace(/[-:]/g,""));alarms=i.type==="examen"?["-P3D","-P1D"]:["-P1D"]}
+    else{L.push("DTSTART;VALUE=DATE:"+d,"DTEND;VALUE=DATE:"+addDays(i.due,1).replace(/-/g,""));alarms=i.type==="examen"?["-P2DT15H","-PT15H"]:["-PT15H"]}
+    L.push("SUMMARY:"+icsEsc(TYPES[i.type]+": "+i.title));
+    const desc=[i.subject,i.notes].filter(Boolean).join("\n");if(desc)L.push("DESCRIPTION:"+icsEsc(desc));
+    alarms.forEach(a=>L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(TYPES[i.type]+": "+i.title),"TRIGGER:"+a,"END:VALARM"));
+    L.push("END:VEVENT");
+  });
+  L.push("END:VCALENDAR");return L.join("\r\n");
+}
+function download(text,type,name){const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
+$("#allCal").addEventListener("click",()=>{const list=items.filter(i=>!i.done&&i.type!=="tarea"&&daysTo(i.due)>=0&&!i.example);
+  if(!list.length){toast("No hay exámenes ni entregas pendientes.");return}
+  download(buildICS(list),"text/calendar;charset=utf-8","agenda-examenes-entregas.ics");toast("Abre el archivo para añadirlo al calendario")});
+
+// ---------- copia de seguridad ----------
+$("#exportBtn").addEventListener("click",()=>{download(JSON.stringify({app:"agenda-edificacion",version:1,exported:new Date().toISOString(),items},null,2),"application/json","agenda-copia-"+todayStr()+".json");toast("Copia descargada")});
+let pendingImport=null;
+$("#importBtn").addEventListener("click",()=>$("#importFile").click());
+$("#importFile").addEventListener("change",async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;const c=$("#importConfirm");
+  try{const d=JSON.parse(await f.text());const arr=Array.isArray(d)?d:d.items;
+    if(!Array.isArray(arr)||!arr.every(i=>i&&i.title&&i.due&&TYPES[i.type]))throw 0;
+    pendingImport=arr;c.innerHTML="";c.append("Se sustituye lo que tienes por "+arr.length+" elementos de la copia.");
+    const y=document.createElement("button");y.className="btn danger";y.textContent="Restaurar";y.onclick=()=>{items=pendingImport.map(i=>({id:i.id||uid(),...i}));save();render();c.hidden=true;toast("Copia restaurada")};
+    const n=document.createElement("button");n.className="btn text";n.textContent="Cancelar";n.onclick=()=>{c.hidden=true;pendingImport=null};
+    c.append(y,n);c.hidden=false;
+  }catch(err){c.textContent="Ese archivo no es una copia de esta agenda.";c.hidden=false}
+});
+
+// ---------- avisos al abrir ----------
+function notifState(){return ("Notification" in window)?Notification.permission:"none"}
+function updNotifBtn(){const s=notifState(),b=$("#notifBtn");
+  if(s==="granted"){b.textContent="Avisos activados";b.disabled=true}
+  else if(s==="denied"){b.textContent="Avisos bloqueados en los ajustes del móvil";b.disabled=true}
+  else if(s==="none"){b.textContent="Avisos: instala la app en la pantalla de inicio";b.disabled=true}
+  else{b.textContent="Activar avisos";b.disabled=false}}
+$("#notifBtn").addEventListener("click",async()=>{try{await Notification.requestPermission()}catch(e){}updNotifBtn();checkReminders()});
+async function checkReminders(){
+  if(notifState()!=="granted")return;
+  let sent={};try{sent=JSON.parse(ls("sent")||"{}")}catch(e){}
+  const today=todayStr();
+  const due=items.filter(i=>!i.done&&!i.example&&[0,1].includes(daysTo(i.due))&&sent[i.id]!==today+daysTo(i.due));
+  if(!due.length)return;
+  const reg=("serviceWorker" in navigator)?await navigator.serviceWorker.ready.catch(()=>null):null;
+  for(const i of due){const n=daysTo(i.due);const title=(n===0?"Hoy: ":"Mañana: ")+TYPES[i.type].toLowerCase();
+    const body=i.title+(i.subject?" · "+i.subject:"")+(i.time?" · "+i.time:"");
+    try{if(reg)await reg.showNotification(title,{body,icon:"icons/icon-192.png",badge:"icons/icon-192.png",tag:i.id});else new Notification(title,{body,icon:"icons/icon-192.png"})}catch(e){}
+    sent[i.id]=today+n;}
+  ls("sent",JSON.stringify(sent));
+}
+
+// ---------- menú ----------
+$("#menuBtn").addEventListener("click",()=>{updNotifBtn();updMenu();$("#importConfirm").hidden=true;$("#menuBg").hidden=false});
+$("#menuClose").addEventListener("click",()=>$("#menuBg").hidden=true);
+$("#menuBg").addEventListener("click",e=>{if(e.target.id==="menuBg")$("#menuBg").hidden=true});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeForm();$("#menuBg").hidden=true}});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){render();checkReminders()}});
+
+// ---------- arranque ----------
+if("serviceWorker" in navigator&&location.protocol!=="file:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+initGis();render();checkReminders();
+})();
+</script>
+</body>
+</html>
